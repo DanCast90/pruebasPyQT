@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QMainWindow, QLabel, QPushButton
+from PyQt5.QtWidgets import QMainWindow, QLabel, QPushButton, QVBoxLayout, QWidget,QApplication
 
 class MainWindow(QMainWindow):
     def __init__(self):
