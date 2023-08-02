@@ -1,6 +1,6 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QTableWidget, QTableWidgetItem, QLineEdit, QPushButton, QVBoxLayout
-import csv
+from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QTableWidget, QTableWidgetItem, QLineEdit, QPushButton, QVBoxLayout,QTextEdit
+import pandas as pd
 
 def main(args):
     app = QApplication(args)
@@ -12,55 +12,71 @@ class App(QWidget):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("CSV Reader")
+        self.setWindowTitle("Lector de CSV")
 
-        # Create a file selection box
+        # Crear una caja de selección de archivos
         self.file_box = QLineEdit()
-        self.file_box.setPlaceholderText("Select a CSV file")
+        self.file_box.setPlaceholderText("Selecciona un archivo CSV")
 
-        # Create a button to open the file selection dialog
-        self.open_button = QPushButton("Open")
+        # Crear un botón para abrir el cuadro de diálogo de selección de archivos
+        self.open_button = QPushButton("Abrir")
         self.open_button.clicked.connect(self.open_file)
 
-        # Create a table to display the data
+        # Crear un cuadro de texto para mostrar el JSON
+        self.json_box = QTextEdit()
+        self.json_box.setReadOnly(True)
+
+        # Crear una tabla para mostrar los datos
         self.table = QTableWidget()
         self.table.setColumnCount(0)
 
-        # Layout the widgets
+        # Diseñar los widgets en la ventana
         layout = QVBoxLayout()
         layout.addWidget(self.file_box)
         layout.addWidget(self.open_button)
         layout.addWidget(self.table)
+        layout.addWidget(self.json_box)
         self.setLayout(layout)
 
     def open_file(self):
-        # Get the filename from the file selection box
-        filename, _ = QFileDialog.getOpenFileName(self, "Open CSV file", "", "CSV files (*.csv)")
+        # Obtener el nombre del archivo desde la caja de selección de archivos
+        filename, _ = QFileDialog.getOpenFileName(self, "Abrir archivo CSV", "", "Archivos CSV (*.csv)")
 
-        # If the user selected a file, read it and populate the table
+        # Si el usuario seleccionó un archivo, leerlo y mostrar los datos en la tabla
         if filename:
-            with open(filename, "r") as f:
-                reader = csv.reader(f)
-                data = list(reader)
+            try:
+                # Especificar la codificación (por ejemplo, "Latin-1") utilizada en el archivo CSV
+                data = pd.read_csv(filename, encoding="Latin-1")
 
-                if not data:
+
+                if data.empty:
                     return
 
+                data.to_json("text.json",orient="records")
                 # Limpiar la tabla antes de cargar nuevos datos
                 self.table.setRowCount(0)
-                self.table.setColumnCount(len(data[0]))
+                self.table.setColumnCount(len(data.columns))
 
-                # Configurar los nombres de las columnas usando la primera fila del CSV
-                headers = data[0]
+                # Configurar los nombres de las columnas usando las cabeceras del CSV
+                headers = data.columns.tolist()
                 self.table.setHorizontalHeaderLabels(headers)
 
-                # Agregar los datos a la tabla, omitiendo la primera fila (encabezados)
-                for row in data[1:]:
+                # Agregar datos a la tabla
+                for row in data.values:
                     row_position = self.table.rowCount()
                     self.table.insertRow(row_position)
 
                     for col, item in enumerate(row):
-                        self.table.setItem(row_position, col, QTableWidgetItem(item))
+                        self.table.setItem(row_position, col, QTableWidgetItem(str(item)))
+
+                # Convertir los datos a JSON
+                json_data = data.to_json(orient="records")
+
+                # Mostrar los datos JSON en el cuadro de texto
+                self.json_box.setPlainText(json_data)
+
+            except Exception as e:
+                print(f"Error al leer el archivo CSV: {e}")
 
 if __name__ == "__main__":
     main(sys.argv)
